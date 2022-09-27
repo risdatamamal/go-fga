@@ -1,35 +1,34 @@
-# FGA Kominfo Learning Day 3
+# FGA Kominfo Learning Day 2
 
-## WHAT LEARN TODAY
-- Function
-- Closure & Callback
-- Pointer
-- Struct
-- Variable Scope
-
+## WHAT WE LEARN
+1. Conditional Statement
+    - if else
+    - switch
+    - best practice
+2. Loop
+    - cara menggunakan
+        - di go hanya ada for loop
+3. Array/Slice
+    - assign
+    - get data
+    - loop over
+4. Map (Key/Value Type)
+    - assign
+    - get data
+    - delete
+    - loop over
+5. Alias
+6. String
+    - ascii / rune / byte
+    - loop over
+Mini Quiz
 ---
+
 Notes:
+// APA ITU NIL?
+// APA ITU IMMUTABLE DAN MUTABLE TYPE?
 
-Function:
-input -> output
-x -> [x] -> y
-
-Variable Scope
--> ditandakan dengan huruf kapital pada setiap deklarasi
-    -> huruf kapital => variable/function/constant/struct bisa diakses oleh pkg lain
-    -> huruf lower case => variable/function/constant/struct bersifat private hanya untuk pkg tersebut
-
-Init Function:
--> setiap package yang dipanggil oleh package main
-dan memiliki init function, go akan menjalankan
-semua init function terlebih dahulu
-sebelum menjalankan main function
-
-Pointer:
--> sering terjadi "invalid nil memory address"
-
----
-References:
-- https://medium.com/@anar_py/option-pattern-in-go-944eda01677a
+Array/Slice -> hubungannya index(berurutan) dan value
+Hash Map / Map -> key dan value
 
 ---
