@@ -12,10 +12,9 @@ func main() {
 	// 2. program akan mengeluarkan pesan error, ketika id tidak ditemukan
 	// "student dengan id xx tidak ada pada database"
 	// 3. id harus positive integer
-	var user1 user.User
 
-	user1 = user.User{
-		ID:   10,
+	user1 := user.User{
+		ID:   1,
 		Name: "tara",
 		DOB:  "1945-08-17",
 		POB:  "Indonesia",
@@ -23,7 +22,7 @@ func main() {
 	user1.CallName()
 
 	user2 := user.User{
-		ID:   10,
+		ID:   2,
 		Name: "tara2",
 		DOB:  "1945-08-17",
 		POB:  "Indonesia",
