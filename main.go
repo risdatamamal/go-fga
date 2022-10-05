@@ -1,296 +1,267 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"reflect"
-	"strings"
-	"sync"
-
-	"go-fga/user"
+	"os"
+	"time"
 )
 
-type Motor interface {
-	Berjalan()
-	PengisianDaya()
-	Maintenance()
-}
-
-type Tesla struct {
-	maintenanceLocation string
-	batteryType         string
-	batteryLevel        float64
-}
-
-// bagaimana caranya agar tesla
-// dapat tergolongkan sebagai implementator dari motor?
-
-// caranya adalah dengan implemetasi
-// function yang dimiliki motor, oleh pointer dari tesla
-func (t *Tesla) Berjalan() {
-	// tesla akan bisa berjalan jika batery level > 30%
-	if t.batteryLevel > 30.0 {
-		fmt.Println("bisa berjalan")
-		return
-	}
-	fmt.Println("harus mengisi daya")
-}
-func (t *Tesla) PengisianDaya() {}
-func (t *Tesla) Maintenance()   {}
-
-type Honda struct {
-	maintenanceLocation string
-	fuelType            string
-	fuelLevel           float64
-}
-
-func (h *Honda) Berjalan() {
-	// honda akan bisa berjalan jika batery level > 10%
-	if h.fuelLevel > 10.0 {
-		fmt.Println("bisa berjalan")
-		return
-	}
-	fmt.Println("harus mengisi daya")
-}
-func (h *Honda) PengisianDaya() {}
-func (h *Honda) Maintenance()   {}
-
 func main() {
-	// function yang secara default di panggil di awal penjalanan program
+	// penggunaan dari channel
+	// pembuatan worker pool
 
-	// defer statement
-	// statement yang membantu kita
-	// untuk ensure function akan dijalankan
-	// di AKHIR process
-	// meskipun deklarasinya di awal process
-	defer fmt.Println("process done")
+	// [1,2,3,4,5,6,7,8,9]
 
-	// #4 Concurrency
-	// cara implementasinya -> go
-	// go AsyncFunction()
-	// main function tidak tau apakah
-	// async function sudah dijalan dan selesai
-	// atau belum
-
-	// apakah main function bisa tau
-	// function ini sudah selesai atau belum
-	// bisa:
-	// 	- wait group: akan menunggu hingga process selesai
-	//  - channel: akan menunggu hingga mendapatkan value dari goroutine
-
-	// goroutine:
-	// 		process yang terjadi di dalam process besar lainnya
-	// process besar ini (Thread)
-	// go routine (Thread yang ringan atau kecil)
-
-	// usersName := make(map[int]string, 0)
-
-	// go func() {
-	// 	for key, val := range usersName {
-	// 		fmt.Println(key, val)
-	// 	}
-	// }()
-	// for i := 0; i < 10; i++ {
-	// 	usersName[i] = fmt.Sprintf("user%v", i)
-	// }
-
-	// dalam function di bawah ini
-	// main function hanya melempar value ke goroutine
-	// go routine mana yang execute duluan
-	// main function tidak peduli dengan itu
-	// for i := 0; i < 20; i++ {
-	// 	go PrintName(fmt.Sprintf("name%v", i))
-	// }
-
-	// time.Sleep(time.Second * 3) // delay 5 detik
-
-	// #5 Wait Group -> termasuk ke dalam sync package
-	// variabel yang memaksa main function
-	// baru boleh menjalankan process selanjutnya
-	// setelah semua goroutine selesai dijalankan
-	// var wg sync.WaitGroup
-	// WaitGroupFunc(&wg)
-	// 1. setiap goroutine yang ingin di sync,
-	// wg harus add 1 di dalam variablenya
-	// 2. setiap selesai menjalankan goroutine
-	// wg harus memanggil done
-	// 3. wg harus memanggil wait untuk menunggu semua
-	// goroutine selesai
-	// wg.Wait() // blocking: wait until all goroutine done
-
-	// WaitGroupFuncInside()
-
-	// common problem in concurrency
-	fmt.Println(DataRace())
-	// DataRace:
-	// memory hanya boleh diakses (read / write)
-	// sekali dalam satu waktu
-	// Data Race terjadi ketika ->
-	// memory diakses oleh program / goroutine berbeda
-	// dan melakukan operasi read / write
-
-}
-
-func DataRace() string {
-	t := "Hi"
+	chanInt := make(chan int)
 	go func() {
-		t = "Hello"
+		arr := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+		for i := 0; i < len(arr); i++ {
+			chanInt <- arr[i]
+		}
+		close(chanInt)
 	}()
-	return t
-}
 
-func WaitGroupFunc(wg *sync.WaitGroup) {
-	for i := 0; i < 20; i++ {
-		wg.Add(1)
-		go func(input int) {
-			defer wg.Done()
-			fmt.Println("user", input)
-		}(i)
+	for i := 0; i < 3; i++ {
+		go func() {
+			for val := range chanInt {
+				fmt.Println(val * 10)
+			}
+		}()
 	}
-}
 
-func WaitGroupFuncInside() {
-	var wg sync.WaitGroup
-	for i := 0; i < 20; i++ {
-		wg.Add(1)
-		go func(input int) {
-			defer wg.Done()
-			fmt.Println("user", input)
-		}(i)
-	}
-	wg.Wait()
-}
-
-func PrintName(s string) {
-	fmt.Println(s)
-}
-
-func AsyncFunction() {
-
-	// ini akan berjalan di belakang layar
-	// dibelakang process main function
-	fmt.Println("inside go routine")
+	time.Sleep(10 * time.Second)
 
 }
 
-func InterfaceImpl() {
-	// #1 Interface
-	// -> abstrak yang merepresentasikan suatu kumpulan methods
-	// yang dapat diimplementasikan dengan menggunakan struct
-	var motor1 Motor
-	// motor1.Berjalan() error occur here
-	motor1 = &Tesla{maintenanceLocation: "US", batteryType: "Lithium", batteryLevel: 100.0}
-	fmt.Println(motor1)
+func channeling() {
+	// defer recoveryFunction()
 
-	motor1.Berjalan()
+	// _ = errors.New("error occur in program")
+	// panic(err)
 
-	var motor2 Motor
-	motor2 = &Honda{maintenanceLocation: "ID", fuelType: "Pertamax", fuelLevel: 5.0}
-	motor2.Berjalan()
-	fmt.Println(motor1 == motor2)
+	// panic vs exit
+	// panic bisa di tangkap oleh recover function
+	// terhadap error yang terjadi
+	// exit akan langsung mengeluarkan program
+	// os.Exit(1)
 
-	var motor3 Motor
-	motor3, _ = motor3.(*Honda)
-	fmt.Println("motor3 type:", reflect.TypeOf(motor3))
-	// if ok {
-	// 	fmt.Println("motor3 become honda type")
+	// Channel
+	// pointer yang digunakan untuk
+	// komunikasi antar goroutine
+	// secara aman -> bisa menghindari data race
+
+	chanInt := make(chan int, 3)
+
+	chanInt2 := make(chan int)
+	chanInt3 := make(chan int)
+	// chanInt <- 10 // artinya kita memberikan value ke channel tsb
+	// <- chanInt // artinya kita mengambil value dari channel tsb
+
+	// deadlock -> tidak bisa memproses process selanjutnya
+	go func() {
+		for i := 0; i < 3; i++ {
+			chanInt <- i // berhenti tapi di background
+		}
+		// close -> mengindikasikan bahwa
+		// channel sudah tidak dapat dimasukin nilai lagi
+		// close(chanInt)
+
+		// "send on closed channel"
+		// chanInt <- 0
+	}()
+
+	go func() {
+		// name: go function 1
+		for val := range chanInt3 {
+			chanInt2 <- val
+		}
+		close(chanInt2)
+	}()
+
+	go func() {
+		// name: go function 2
+		for i := 0; i < 10; i++ {
+			chanInt3 <- i
+			time.Sleep(time.Duration(int(time.Millisecond) * i))
+		}
+		close(chanInt3)
+	}()
+
+	// go function 2
+	// 	-> bertugas untuk memasukkan value ke chan3
+	//  ->
+
+	// go function 1
+	// -> me-listen channel3
+	// -> dia juga memasukkan nilai ke channel2
+
+	// main function
+	// me-listion channel2
+
+	// ketika channel di assign
+	// proses assignment akan diproses lebih lanjut setelah
+	// channel di ambil juga nilainya
+
+	// jika hal seperti ini terjadi, akan terjadi deadlock
+
+	// for val := range chanInt {
+	// 	// proses ini akan mendengarkan channel
+	// 	// sehingga ketika channel di assign suatu value,
+	// 	// dia akanlangsung menangkap value tcb
+	// 	fmt.Println(val)
 	// }
-	motor3 = &Tesla{maintenanceLocation: "SG", batteryType: "Lithium", batteryLevel: 10.0}
-	fmt.Println("motor3 type:", reflect.TypeOf(motor3))
 
-	// back to honda
-	motor3 = &Honda{maintenanceLocation: "AUS", fuelType: "Pertalite", fuelLevel: 100.0}
-	fmt.Println("motor3 type:", reflect.TypeOf(motor3))
-}
+	// untuk menghindari deadlock saat assignment
+	// 1. bisa menggunakan close
+	// 2. kita hanya menerima sebanyak channel capacity
 
-func EmptyInterfaceImpl() {
-	// #2 Empty Interface
-	// variable bebas yang dapat di assign ke siapapun
-	var variable1 interface{}
-	variable1 = 1 // int
-	fmt.Println(variable1)
-	variable1 = 10.0 // float64
-	fmt.Println(variable1)
-	variable1 = "Hello World" // string
-	fmt.Println(variable1)
-	variable1 = Honda{} // struct honda
-	fmt.Println(variable1)
-	// variable1 = motor1
-	// fmt.Println(variable1)
+	// for i := 0; i < 3; i++ {
+	// 	fmt.Println(<-chanInt)
+	// }
 
-	// const const1 interface{} = 1
-	// const const2 Honda = Honda{}
-	// const tidak akan bisa di assign dengan data type:
-	//  - interface
-	//  - struct
+	// for {
+	// 	select {
+	// 	case int1 := <-chanInt2:
+	// 		fmt.Println("got from chan2", int1)
+	// 	case int2 := <-chanInt3:
+	// 		fmt.Println("got from chan3", int2)
+	// 	}
+	// }
 
-	/*
-		cannot use 1 (constant of type int)
-		as Motor value in assignment:
-		int does not implement Motor (missing method Berjalan)
-	*/
-	// motor3 = 1 error occur here
-
-	// empty interface:
-	// 	tidak memiliki method
-	//  sehingga type apapun bisa di assign ke interface tsb
-
-	// abstraction interface:
-	//  memiliki method/ function
-	//  yang menjadi syarat minimum agar
-	//  suatu type bisa diassign ke interface tsb
-
-	// bukan suatu best practice ketika
-	// kita menggunakan variable type menjadi
-	// empty interface semua. karena GO bukan diciptakan untuk itu
-
-	// assertion / type casting
-	var intf1 any
-	intf1 = 10
-	num := intf1.(int)
-	fmt.Println(num)
-
-	// Error Assertion
-	// var intf2 any
-	// intf2 = 10
-	// num2 := intf2.(float64)
-	// "interface conversion: interface {} is int, not float64"
-	// fmt.Println(num2)
-}
-
-func ReflectImpl() {
-	teacher1 := user.NewTeacher("Calman", 1)
-	student1 := user.NewStudent("Tara", 1)
-	fmt.Println(teacher1, student1)
-
-	// #3 Reflection
-	// package built in golang
-	// yang digunakan untuk manipulasi
-	// data type di golang
-
-	// menentukan type data
-	int1 := 10
-	var int2 any
-	int2 = 11
-	fmt.Println(reflect.TypeOf(int1), reflect.TypeOf(int2))
-	if reflect.TypeOf(int2).Kind() != reflect.Int {
-		fmt.Println("bukan int nih bos")
+	for val := range chanInt2 {
+		fmt.Println(val)
 	}
 
-	// deep equal
-	motor1 := Honda{maintenanceLocation: "ID", fuelType: "Pertamax", fuelLevel: 10.0}
-	motor2 := Honda{maintenanceLocation: "ID", fuelType: "Pertamax", fuelLevel: 10.0}
-	fmt.Println(motor1 == motor2, reflect.DeepEqual(motor1, motor2))
+	// Dengan menggunakan channel, kita bisa tau
+	// kapan sebuah go routine selesai menjalankan program / tugasnya
 
-	// ?type=sekolah
-	// ?type=Sekolah
-	str1 := "sekolah"
-	str2 := "Sekolah"
-	fmt.Println(str1 == str2,
-		reflect.DeepEqual(str1, str2),
-		strings.EqualFold(str1, str2))
+	// apakah goroutine + channel
+	// bisa mempercepat program kita?
+	// 	tidak selalu -> semakin banyak goroutine, dia akan memakan resource
+}
 
-	// deep equal -> function return boolean
-	// boolean -> data type
+func panicExplain() {
+	defer recoveryFunction()
+	// deferAndExit()
 
-	// numCopied := reflect.Copy(motor1, motor2)
+	// for i := 0; i < 10; i++ {
+	// 	defer fmt.Printf("end of loop%v\n", i)
+	// }
+	// fmt.Println("outside function deferAndExit")
+	var err error
+	email := "calman@gmail.com"
+	if err = isEmailExist(email); err != nil {
+		fmt.Printf("email not valid:%v\n", err)
+		panic(err)
+		return
+	}
+	//"runtime error: invalid memory address or nil pointer dereference" PANIC
+	fmt.Printf("email is exist. you are ready to go! got error:%v", err.Error())
+
+	// Panic
+	// untuk mengeluarkan program dengan suatu indikasi
+	// misalnya, ketika program gagal connect to database
+	// program tidak seharusnya berjalan
+	// ketika kita mencoba memanggil suatu function dari interface
+	// ketika interface itu masih nil
+
+	// panic => dia akan langsung mengeluarkan program
+	// err => data type yang akan menampung informasi kesalahan pada function / program kita
+
+	// Contoh Error:
+	// salah masukin password -> panic?
+	// cuma error "password anda salah" <= error
+}
+
+func recoveryFunction() {
+	// recover akan menangkap error yang terjadi saat panic
+	// atau saat program selesai dijalankan
+
+	// kalau di bahasa pemrograman lain
+	// seperti catch function
+
+	if err := recover(); err != nil {
+		fmt.Printf("program exit caused by error:%v\n", err)
+		return
+	}
+	fmt.Printf("program exit normallay\n")
+}
+
+func isEmailExist(email string) (err error) {
+	emails := map[string]bool{
+		"calman@gmail.com": true,
+		"tara@gmail.com":   true,
+		"abdi@gmail.com":   true,
+		"gulam@gmail.com":  true,
+	}
+	if !emails[email] { // ketika tidak exist
+		// err = errors.New("email is not exist in our system")
+
+		// tergantung linter => convention yang digunakan saat ngoding
+		// error tidak boleh berakhir dengan tanda seru / line baru
+		// error tidak boleh mengandung huruf kapital
+		err = fmt.Errorf("%v IS NOT EXIST in our system", email)
+		return err
+	}
+	// error bis di check apakah dia nil
+	// atau memiliki nilai
+	return nil
+}
+
+func errorHandling() {
+	// error, panic, recover
+
+	// error => situasi yang tidak diinginkan
+	// baik itu dari data yang tidak valid,
+	//   - password salah
+	//   - user tidak ditemukan
+	// kondisi yang tidak normal
+	//   - database tidak bisa connect
+	//   - menghubungkan dengan server lain, tapi tidak bisa connect
+	// kegunaan => mengindikasikan bahwa program kita atau data kita
+	// tidak baik baik saja
+	var err error // interface dengan function Error() => mengubah error menjadi string
+
+	err = errors.New("this is custom error")
+	fmt.Println(err.Error() == "this is custom error")
+	// error biasanya digunakan untuk return / output dari suatu function
+}
+
+func deferAndExit() {
+	// defer recoverFunction()
+	var pwdEnv string
+	defer func() {
+		fmt.Printf("current dir is:%v\n", pwdEnv)
+	}()
+
+	name := "calman1"
+	if name == "calman" {
+		fmt.Println("name is calman")
+		return // dia akan return di sini
+		// dia keluar di sini, dan memanggil defer
+	}
+	fmt.Println("PAKSA KELUAR")
+	// os package adalah package yang
+	// mengakses system komputer kita secara langsung
+
+	for i := 0; i < 10; i++ {
+		defer fmt.Printf("end of loop in function%v\n", i)
+	}
+
+	// 0 mengindikasikan success
+	// != 0 mengindikasikan error
+	// exit => akan memaksa program untuk keluar
+	// exit ini berguna nantinya untuk:
+	// 	 1. mengetahui program kita mati karena apa
+	//   2. kita bisa memanfaatkan grace exit di program go
+	// 			- ini akan dibahas pada web application
+	// os.Exit(1) // di line ini, dia akan langsung mematikan program go kita
+	pwdEnv = os.Getenv("PWD")
+	fmt.Println(pwdEnv)
+
+	hostName, _ := os.Hostname()
+	fmt.Println(hostName)
+
+	fmt.Println("this is not calman")
 }

@@ -1,24 +1,30 @@
-# FGA Kominfo Learning Day 4
+# FGA Kominfo Learning Day 5
 
 ## WHAT LEARN TODAY
-- Interface
-    - abstraksi dari code
-    - implementasi abstrak dengan menggunakan struct
-    - type assertion
-- Empty Interface
-    - kegunaannya
-    - type assertion
-    - handling
-- Reflect (package)
-    - playing around for this package
-- Concurrency / go routine
-    - concurrency vs paralel
-    - asynchronous
-    - penggunaan concurrency
-    - best practice / yang biasa digunakan
-    - common problem
-    - is our program need concurrency?
-- Wait group (part of concurrency)
-    - intro
-    - cara penggunaan
-    - common error
+- Channel
+  - pengertian channel
+  - kegunaan channel dalam concurrency
+  - sending and receive data in channel
+  - switch channel
+  - real case channel
+
+  example:
+    - worker pool
+ref:
+  - https://gobyexample.com/worker-pools
+  - https://ably.com/blog/pubsub-golang
+  - https://medium.com/@thejasbabu/concurrency-patterns-golang-5c5e1bcd0833
+
+- defer and exit program
+   - pengertian defer function dan exit
+   - kegunaannya dari defer dan exit
+ref:
+   - https://stackoverflow.com/questions/37798572/exiting-go-applications-gracefully
+
+- error, panic, recover
+    - error pada golang
+    - handling error pada golang
+    - panic situation
+        - common panic situation
+    - recover function
+    - real cases
