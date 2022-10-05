@@ -1,267 +1,252 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"time"
+	"io/ioutil"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
+const (
+	PORT = ":8080"
+)
+
+type User struct {
+	Code  string `json:"code"`
+	Name  string `json:"name"`
+	Class string `json:"class"`
+}
+
+var (
+	users = map[string]User{
+		"user1": {
+			Code:  "user1",
+			Name:  "Calman",
+			Class: "A",
+		},
+		"user2": {
+			Code:  "user2",
+			Name:  "Tara",
+			Class: "B",
+		},
+	}
+)
+
+// untuk mendapatkan json
+// 1. menggunakan map (yang mirip dengan structure json)
+// 2. struct tag (`json:""`)
+
 func main() {
-	// penggunaan dari channel
-	// pembuatan worker pool
+	// #2 Web Framework
+	// -> package yang mempermudah untuk membuar suatu web server / API
+	// akan lebih rapi
+	// banyak build in function yang dapat digunakan
 
-	// [1,2,3,4,5,6,7,8,9]
+	// sebelum menggunakan web framework
+	// pastikan kita menginstall package web framework itu sendiri
 
-	chanInt := make(chan int)
-	go func() {
-		arr := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
-		for i := 0; i < len(arr); i++ {
-			chanInt <- arr[i]
+	// perlu deklarasi web engine
+	ginEngine := gin.Default()
+
+	// perlu mendaftarkan PATH dari API kita
+
+	// dalam mendefiniskan METHOD
+	// gin menawarkan kemudahan dalam mengidentifikasi method itu
+
+	// gin mengenal namanya group of path
+	groupUser := ginEngine.Group("/user", func(ctx *gin.Context) {
+		// function handler di sini
+		// bisa berfungsi sebagai
+
+		// MIDDLEWARE
+		// function handler yang akan dijalankan
+		// untuk semua api dalam satu group
+		// dengan tujuan untuk melakukan pengecheckan
+		// atau secondary logic
+
+		fmt.Println("handler in group")
+	})
+
+	groupUser.GET("", func(ctx *gin.Context) {
+		// get query user code
+		userCode := ctx.Query("user_code")
+		if err := checkUserCode(userCode); err != nil {
+			// handle error, gunakan AbortWithStatusJSON
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, map[string]string{
+				"error": "user_code cannot be empty",
+				"type":  "BAD_REQUEST"})
+			return
 		}
-		close(chanInt)
-	}()
 
-	for i := 0; i < 3; i++ {
-		go func() {
-			for val := range chanInt {
-				fmt.Println(val * 10)
-			}
-		}()
-	}
+		// success JSON
+		user := users[userCode]
+		ctx.JSON(http.StatusOK, user)
+	})
 
-	time.Sleep(10 * time.Second)
-
-}
-
-func channeling() {
-	// defer recoveryFunction()
-
-	// _ = errors.New("error occur in program")
-	// panic(err)
-
-	// panic vs exit
-	// panic bisa di tangkap oleh recover function
-	// terhadap error yang terjadi
-	// exit akan langsung mengeluarkan program
-	// os.Exit(1)
-
-	// Channel
-	// pointer yang digunakan untuk
-	// komunikasi antar goroutine
-	// secara aman -> bisa menghindari data race
-
-	chanInt := make(chan int, 3)
-
-	chanInt2 := make(chan int)
-	chanInt3 := make(chan int)
-	// chanInt <- 10 // artinya kita memberikan value ke channel tsb
-	// <- chanInt // artinya kita mengambil value dari channel tsb
-
-	// deadlock -> tidak bisa memproses process selanjutnya
-	go func() {
-		for i := 0; i < 3; i++ {
-			chanInt <- i // berhenti tapi di background
+	// untuk menambahkan user
+	groupUser.POST("", func(ctx *gin.Context) {
+		// mengambil body
+		var user User
+		// function ini berfungsi untuk
+		// memasukkan data body ke struct kita
+		// dengan cara memasukkan address of variable
+		if err := ctx.ShouldBind(&user); err != nil {
+			// handle error, gunakan AbortWithStatusJSON
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, map[string]string{
+				"error": "invalid payload",
+				"type":  "BAD_REQUEST"})
+			return
 		}
-		// close -> mengindikasikan bahwa
-		// channel sudah tidak dapat dimasukin nilai lagi
-		// close(chanInt)
 
-		// "send on closed channel"
-		// chanInt <- 0
-	}()
+		// menambahkan user payload ke map
+		users[user.Code] = user
 
-	go func() {
-		// name: go function 1
-		for val := range chanInt3 {
-			chanInt2 <- val
-		}
-		close(chanInt2)
-	}()
+		// response success
+		ctx.JSON(http.StatusAccepted, map[string]any{
+			"message": "user successfully added",
+			"payload": user})
+	})
 
-	go func() {
-		// name: go function 2
-		for i := 0; i < 10; i++ {
-			chanInt3 <- i
-			time.Sleep(time.Duration(int(time.Millisecond) * i))
-		}
-		close(chanInt3)
-	}()
+	// ASSESSMENT:
+	// membuat API PUT: mengupdate user identity dengan yang dapat diubah hanya name dan class
+	// membuat API DELETE: mendelete user dengan query user_code
 
-	// go function 2
-	// 	-> bertugas untuk memasukkan value ke chan3
-	//  ->
-
-	// go function 1
-	// -> me-listen channel3
-	// -> dia juga memasukkan nilai ke channel2
-
-	// main function
-	// me-listion channel2
-
-	// ketika channel di assign
-	// proses assignment akan diproses lebih lanjut setelah
-	// channel di ambil juga nilainya
-
-	// jika hal seperti ini terjadi, akan terjadi deadlock
-
-	// for val := range chanInt {
-	// 	// proses ini akan mendengarkan channel
-	// 	// sehingga ketika channel di assign suatu value,
-	// 	// dia akanlangsung menangkap value tcb
-	// 	fmt.Println(val)
-	// }
-
-	// untuk menghindari deadlock saat assignment
-	// 1. bisa menggunakan close
-	// 2. kita hanya menerima sebanyak channel capacity
-
-	// for i := 0; i < 3; i++ {
-	// 	fmt.Println(<-chanInt)
-	// }
-
-	// for {
-	// 	select {
-	// 	case int1 := <-chanInt2:
-	// 		fmt.Println("got from chan2", int1)
-	// 	case int2 := <-chanInt3:
-	// 		fmt.Println("got from chan3", int2)
-	// 	}
-	// }
-
-	for val := range chanInt2 {
-		fmt.Println(val)
-	}
-
-	// Dengan menggunakan channel, kita bisa tau
-	// kapan sebuah go routine selesai menjalankan program / tugasnya
-
-	// apakah goroutine + channel
-	// bisa mempercepat program kita?
-	// 	tidak selalu -> semakin banyak goroutine, dia akan memakan resource
-}
-
-func panicExplain() {
-	defer recoveryFunction()
-	// deferAndExit()
-
-	// for i := 0; i < 10; i++ {
-	// 	defer fmt.Printf("end of loop%v\n", i)
-	// }
-	// fmt.Println("outside function deferAndExit")
-	var err error
-	email := "calman@gmail.com"
-	if err = isEmailExist(email); err != nil {
-		fmt.Printf("email not valid:%v\n", err)
+	// perlu menjalankan web engine
+	if err := ginEngine.Run(PORT); err != nil {
 		panic(err)
-		return
 	}
-	//"runtime error: invalid memory address or nil pointer dereference" PANIC
-	fmt.Printf("email is exist. you are ready to go! got error:%v", err.Error())
 
-	// Panic
-	// untuk mengeluarkan program dengan suatu indikasi
-	// misalnya, ketika program gagal connect to database
-	// program tidak seharusnya berjalan
-	// ketika kita mencoba memanggil suatu function dari interface
-	// ketika interface itu masih nil
-
-	// panic => dia akan langsung mengeluarkan program
-	// err => data type yang akan menampung informasi kesalahan pada function / program kita
-
-	// Contoh Error:
-	// salah masukin password -> panic?
-	// cuma error "password anda salah" <= error
 }
 
-func recoveryFunction() {
-	// recover akan menangkap error yang terjadi saat panic
-	// atau saat program selesai dijalankan
+func nativeServer() {
+	// #1 membuat server dengan native library
+	//  cons:
+	// - ribet
+	// - harus manual checking
+	//	pros:
+	// - ringan
 
-	// kalau di bahasa pemrograman lain
-	// seperti catch function
+	// dalam pembuatan server
+	// kita akan mengenal dengan yang namanya server PORT
+	// IP -> unique address yang dapat dikenali oleh client
+	// PORT -> unique address yang dapat server kenali, untuk service yang dijalankan
 
-	if err := recover(); err != nil {
-		fmt.Printf("program exit caused by error:%v\n", err)
-		return
-	}
-	fmt.Printf("program exit normallay\n")
+	// ketika kita ada 1 server (IP untuk server)
+	// - service A (PORT untuk mengenali service A)
+	// - service B (PORT untuk mengenali service B)
+	// - service C (PORT untuk mengenali service C)
+
+	// api / url untuk get status dari server
+	// https://www.google.com/
+	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+		// function handler:
+		// function yang akan digunakan untuk:
+		// 1. menerima request
+		// 2. mengekstrak data request
+		// 3. membalikkan response terhadap request yang diterima
+
+		// request:
+		// banyak banget data yang di berikan client ke server
+		// baik itu data yang bisa kita olah, atau data tentang
+		// request itu sendiri (meta data, dan contextual data)
+
+		// METHOD:
+		// cara client mengirim request ke server
+		// method ->
+		// - GET: untuk meminta data/resource dari server
+		// - POST: untuk memasukkan data / memberikan data ke server
+		// - PUT: untuk mengubah data di server
+		// - DELETE: untuk menghapus data di server
+
+		// BODY:
+		// data yang diberikan client untuk di process
+		// ditambah, diupdate, didelete (POST, PUT, DELETE)
+
+		// HEADER:
+		// contextual data, yang memberikan identitas terhadap suatu request
+		// -> authentication, menentukan request ini datanya mau bertipe apa
+
+		// URL -> Query param:
+		// Data yang dibawa oleh request, yang dapat digunakan untuk
+		// memberikan informasi tambahan terhadap request tersebut
+		// QUERY akan valid ketika method GET (semua valid)
+
+		if r.Method == http.MethodGet {
+			// 1. harus menggunakan query user_code
+			// 2. jika user_code empty, akan membalikkan bad request
+			// 3. jika ada, akan membalikkan informasi user
+			userCode := r.URL.Query().Get("user_code")
+			if err := checkUserCode(userCode); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			// server memberikan identitas response sebagai json
+			w.Header().Add("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(users[userCode])
+			return
+		} else if r.Method == http.MethodPost {
+
+			// dia akan mengassign body object
+			body := r.Body
+			defer body.Close()
+
+			// ioutil akan membaca body object
+			// dan transform ke array of byte []byte
+			bodyByte, err := ioutil.ReadAll(body)
+			if err != nil {
+				panic(err)
+			}
+			// kita transform (unmarshal) array of byte
+			// menjadi struct user
+			var user User
+			_ = json.Unmarshal(bodyByte, &user)
+
+			// menambahkan user ke map
+			users[user.Code] = user
+
+			w.Header().Add("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]any{
+				"message": "user added"})
+			return
+		} else {
+			// akan masuk ketika requestnya tidak bermethod GET
+			http.Error(w, "method not allowed", http.StatusBadRequest)
+			return
+		}
+
+		// dalam memberikan response,
+		// server harus mengikutsertakan
+		// response code -> berlaku secara general
+		// untuk memberi tau client, status dari suatu request
+
+		// CONTOH
+		// 200 -> success
+		// 201 -> accepted
+		// 400 -> bad request
+		// 500 -> internal server error
+
+		// response := users[userCode]
+		// w.Write([]byte(response))
+
+		// dalam kontesk web service
+		// akan mengenal istilah json
+		// json -> structured object
+		// yang sudah terstandard yang biasa digunakan
+		// untuk mengirim data antara server dan client
+
+		// biasa digunakan -> karena ada banyak data type lainnya selain json
+
+	})
+
+	http.ListenAndServe(PORT, nil)
 }
 
-func isEmailExist(email string) (err error) {
-	emails := map[string]bool{
-		"calman@gmail.com": true,
-		"tara@gmail.com":   true,
-		"abdi@gmail.com":   true,
-		"gulam@gmail.com":  true,
+func checkUserCode(userCode string) error {
+	if userCode == "" {
+		return errors.New("user code cannot be empty")
 	}
-	if !emails[email] { // ketika tidak exist
-		// err = errors.New("email is not exist in our system")
-
-		// tergantung linter => convention yang digunakan saat ngoding
-		// error tidak boleh berakhir dengan tanda seru / line baru
-		// error tidak boleh mengandung huruf kapital
-		err = fmt.Errorf("%v IS NOT EXIST in our system", email)
-		return err
-	}
-	// error bis di check apakah dia nil
-	// atau memiliki nilai
 	return nil
-}
-
-func errorHandling() {
-	// error, panic, recover
-
-	// error => situasi yang tidak diinginkan
-	// baik itu dari data yang tidak valid,
-	//   - password salah
-	//   - user tidak ditemukan
-	// kondisi yang tidak normal
-	//   - database tidak bisa connect
-	//   - menghubungkan dengan server lain, tapi tidak bisa connect
-	// kegunaan => mengindikasikan bahwa program kita atau data kita
-	// tidak baik baik saja
-	var err error // interface dengan function Error() => mengubah error menjadi string
-
-	err = errors.New("this is custom error")
-	fmt.Println(err.Error() == "this is custom error")
-	// error biasanya digunakan untuk return / output dari suatu function
-}
-
-func deferAndExit() {
-	// defer recoverFunction()
-	var pwdEnv string
-	defer func() {
-		fmt.Printf("current dir is:%v\n", pwdEnv)
-	}()
-
-	name := "calman1"
-	if name == "calman" {
-		fmt.Println("name is calman")
-		return // dia akan return di sini
-		// dia keluar di sini, dan memanggil defer
-	}
-	fmt.Println("PAKSA KELUAR")
-	// os package adalah package yang
-	// mengakses system komputer kita secara langsung
-
-	for i := 0; i < 10; i++ {
-		defer fmt.Printf("end of loop in function%v\n", i)
-	}
-
-	// 0 mengindikasikan success
-	// != 0 mengindikasikan error
-	// exit => akan memaksa program untuk keluar
-	// exit ini berguna nantinya untuk:
-	// 	 1. mengetahui program kita mati karena apa
-	//   2. kita bisa memanfaatkan grace exit di program go
-	// 			- ini akan dibahas pada web application
-	// os.Exit(1) // di line ini, dia akan langsung mematikan program go kita
-	pwdEnv = os.Getenv("PWD")
-	fmt.Println(pwdEnv)
-
-	hostName, _ := os.Hostname()
-	fmt.Println(hostName)
-
-	fmt.Println("this is not calman")
 }

@@ -1,30 +1,45 @@
-# FGA Kominfo Learning Day 5
+# FGA Kominfo Learning Day 6
 
 ## WHAT LEARN TODAY
-- Channel
-  - pengertian channel
-  - kegunaan channel dalam concurrency
-  - sending and receive data in channel
-  - switch channel
-  - real case channel
+- WEB Server
+    - definisi
+    - network/jaringan
+        - local network
+        - public network
+    - url
+        - path
+        - parameter
+        - query
+    - method (hanya sebagian)
+        - GET
+        - POST
+        - PUT
+        - DELETE
+    - transport network
+        - http1.1
+        - http2
+        - http3
+        - gRPC
+        - h2c
 
-  example:
-    - worker pool
-ref:
-  - https://gobyexample.com/worker-pools
-  - https://ably.com/blog/pubsub-golang
-  - https://medium.com/@thejasbabu/concurrency-patterns-golang-5c5e1bcd0833
+- HTTP server (native built in library)
+    - GET method
+    - POST method
 
-- defer and exit program
-   - pengertian defer function dan exit
-   - kegunaannya dari defer dan exit
-ref:
-   - https://stackoverflow.com/questions/37798572/exiting-go-applications-gracefully
+- Web Framework
+<!-- TANPA CLEAN ARCHITECTURE -->
+    - definisi web framework dan contoh
+        - mux
+        - echo
+        - dll
+    - Gin Gonic :)
+        https://github.com/gin-gonic/gin
 
-- error, panic, recover
-    - error pada golang
-    - handling error pada golang
-    - panic situation
-        - common panic situation
-    - recover function
-    - real cases
+----
+## mini assessment
+
+ASSESSMENT:
+1. membuat API PUT: mengupdate user identity dengan yang dapat diubah hanya name dan class
+2. membuat API DELETE: mendelete user dengan query user_code
+
+----
