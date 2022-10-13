@@ -1,45 +1,28 @@
-# FGA Kominfo Learning Day 6
+# FGA Kominfo Learning Day 7
 
 ## WHAT LEARN TODAY
-- WEB Server
-    - definisi
-    - network/jaringan
-        - local network
-        - public network
-    - url
-        - path
-        - parameter
-        - query
-    - method (hanya sebagian)
-        - GET
-        - POST
-        - PUT
-        - DELETE
-    - transport network
-        - http1.1
-        - http2
-        - http3
-        - gRPC
-        - h2c
+- Database (Postgresql)
+    - apa itu database
+    - kenapa database ada
+    - hierarki dalam database
+        - database
+        - schema
+        - table
+        - column
+    - connect dengan database client (dbeaver)
+        - https://dbeaver.io/download/
+        - SQL
+            - apa itu SQL?
+        - membuat table
+        - CRUD
 
-- HTTP server (native built in library)
-    - GET method
-    - POST method
+    - Deep Dive (little):
+        - transaction
 
-- Web Framework
-<!-- TANPA CLEAN ARCHITECTURE -->
-    - definisi web framework dan contoh
-        - mux
-        - echo
-        - dll
-    - Gin Gonic :)
-        https://github.com/gin-gonic/gin
+- Implementasi GO
+    - menjelaskan native dan ORM package
+    - query dan mapping ke struct di Go (Native dan ORM)
 
-----
-## mini assessment
-
-ASSESSMENT:
-1. membuat API PUT: mengupdate user identity dengan yang dapat diubah hanya name dan class
-2. membuat API DELETE: mendelete user dengan query user_code
-
-----
+- Clean Architecture
+    - Apa itu clean architecture
+    - Kenapa harus ada clean architecture
