@@ -1,39 +1,116 @@
 package main
 
 import (
-	_ "github.com/lib/pq"
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"go-fga/config/postgres"
+	"go-fga/pkg/domain/message"
+
+	"github.com/gin-gonic/gin"
+
+	engine "go-fga/config/gin"
+	docs "go-fga/docs"
+	userrepo "go-fga/pkg/repository/user"
+	userhandler "go-fga/pkg/server/http/handler/user"
+	userrouter "go-fga/pkg/server/http/router/v1"
+	userusecase "go-fga/pkg/usecase/user"
+
+	swaggerfiles "github.com/swaggo/files"
+	ginswagger "github.com/swaggo/gin-swagger"
 )
 
-// sql untuk membuat table
-var schema = `
-CREATE TABLE users (
-    id SERIAL NOT NULL PRIMARY KEY,
-    last_name TEXT,
-    first_name TEXT
-);`
+// comment dalam go
+// untuk beberapa CODE GENERATOR -> tools yang digunakan untuk
+// membuat code template di dalam project GO
+// ex: swaggo, mockgen, dll
+// untuk beberapa tools generator, tools akan membaca comment
+// yang memiliki annotation
 
-// define struct untuk user
-type User struct {
-	ID        uint64 `json:"id" db:"id" gorm:"id"` // tag suatu property struct
-	FirstName string `json:"first_name" db:"first_name" gorm:"first_name"`
-	LastName  string `json:"last_name" db:"last_name" gorm:"last_name"`
-}
-
-type Class struct {
-	ID     uint64 `json:"id" db:"id" gorm:"id"` // tag suatu property struct
-	Name   string `json:"name" db:"name" gorm:"name"`
-	UserID uint64 `json:"user_id" db:"user_id" gorm:"user_id"`
-}
-
-// tag ini akan dibaca oleh sqlx sebagai properti yang valid untuk digunakan
-
+// @title UserOrder API
+// @version 1.0
+// @description This is api for creating user and user order
+// @termOfService https://swagger.io/terms
+// @contact.name FGA API Support
+// @host localhost:8080
+// @BasePath /
 func main() {
-	// Clean Architecture
-	// bersifat tidak mutlak: setiap company memiliki standard masing2
+	// generate postgres config and connect to postgres
+	// this postgres client, will be used in repository layer
+	postgresCln := postgres.NewPostgresConnection(postgres.Config{
+		Host:         "localhost",
+		Port:         "5432",
+		User:         "postgres",
+		Password:     "postgresAdmin",
+		DatabaseName: "postgres",
+	})
 
-	// aku bagi berdasarkan kesamaan job desc
-	// usecase -> tempat menyimpan business logic
-	// repository -> codingan yang berhubungan sama database
-	// server -> untuk menghandle server yang dijalankan (gin)
-	// domain -> untuk mengelompokkan di suatu project, ada model apa aja
+	// gin engine
+	ginEngine := engine.NewGinHttp(engine.Config{
+		Port: ":8080",
+	})
+	ginEngine.GetGin().Use(
+		gin.Recovery(),
+		gin.Logger(),
+	)
+
+	startTime := time.Now()
+	ginEngine.GetGin().GET("/", func(ctx *gin.Context) {
+		// secara default map jika di return dalam
+		// response API, dia akan menjadi JSON
+		respMap := map[string]any{
+			"code":       0,
+			"message":    "server up and running",
+			"start_time": startTime,
+		}
+
+		// golang memiliki json package
+		// json package bisa mentranslasikan
+		// map menjadi suatu struct
+		// nb: struct harus memiliki tag/annotation JSON
+		var respStruct message.Response
+
+		// marshal -> mengubah json/struct/map menjadi
+		// array of byte atau bisa kita translatekan menjadi string
+		// dengan format JSON
+		resByte, err := json.Marshal(respMap)
+		if err != nil {
+			panic(err)
+		}
+		// unmarshal -> translasikan string/[]byte dengan format JSON
+		// menjadi map/struct dengan tag/annotation json
+		err = json.Unmarshal(resByte, &respStruct)
+		if err != nil {
+			panic(err)
+		}
+
+		ctx.JSON(http.StatusOK, respStruct)
+	})
+
+	docs.SwaggerInfo.BasePath = "/v1"
+	ginEngine.GetGin().GET("/swagger/*any", ginswagger.
+		WrapHandler(swaggerfiles.Handler))
+
+	// generate user repository
+	userRepo := userrepo.NewUserRepo(postgresCln)
+	// initiate use case
+	userUsecase := userusecase.NewUserUsecase(userRepo)
+	// initiate handler
+	useHandler := userhandler.NewUserHandler(userUsecase)
+	// initiate router
+	userrouter.NewUserRouter(ginEngine, useHandler).Routers()
+
+	// ASSESSMENT
+	// buat API
+	// - get user
+	// sebelum membuat order
+	//	- table dengan relasi order -> user (FOREIGN KEY)
+	// 			ref:https://www.postgresqltutorial.com/postgresql-tutorial/postgresql-create-table/
+	// 	- code base untuk repo, usecase, dll
+	// - create order
+	// - get order by user
+
+	// running the service
+	ginEngine.Serve()
 }
